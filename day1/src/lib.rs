@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::{collections::VecDeque, io::BufRead};
 
 struct Elf {
@@ -38,7 +37,7 @@ impl Elves {
     }
 }
 
-pub fn entrypoint<R: BufRead>(read: R) -> usize {
+fn calculate_all_elves<R: BufRead>(read: R) -> Elves {
     let mut elves = Elves::new();
     let mut next_elf = Elf::new();
     for line in read.lines() {
@@ -55,7 +54,19 @@ pub fn entrypoint<R: BufRead>(read: R) -> usize {
     // insert last elf
     elves.insert(next_elf);
 
-    elves.first().total_calories
+    elves
+}
+
+pub fn entrypoint<R: BufRead>(read: R) -> usize {
+    let mut elves = calculate_all_elves(read);
+    // part 1
+    // elves.first().total_calories
+
+    // part 2
+    elves.0.make_contiguous()[..3]
+        .iter()
+        .map(|e| e.total_calories)
+        .sum()
 }
 
 #[cfg(test)]
