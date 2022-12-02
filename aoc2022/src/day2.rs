@@ -14,7 +14,6 @@ impl Day for Day2 {
                 let me = split.next().unwrap()?;
 
                 let round = elf.add(me);
-                println!("{:?} vs {:?} = {}", elf, me, round);
 
                 Ok(score + round)
             })
@@ -22,7 +21,18 @@ impl Day for Day2 {
     }
 
     fn part2(&self, input: &str) -> anyhow::Result<String> {
-        todo!()
+        input
+            .lines()
+            .try_fold(0, |score, line| -> anyhow::Result<usize> {
+                let mut split = line.trim().split(' ');
+                let elf = split.next().map(Choices::try_from).unwrap()?;
+                let me = split.next().map(Game::try_from).unwrap()?;
+
+                let round = elf.add(me);
+
+                Ok(score + round)
+            })
+            .map(|score| score.to_string())
     }
 
     fn day(&self) -> usize {
@@ -31,10 +41,29 @@ impl Day for Day2 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(usize)]
 enum Choices {
-    Rock,
-    Paper,
-    Scissors,
+    Rock = 1,
+    Paper = 2,
+    Scissors = 3,
+}
+
+impl Choices {
+    fn rigged(self, result: Game) -> Self {
+        match (self, result) {
+            (Choices::Rock, Game::Win)
+            | (Choices::Paper, Game::Draw)
+            | (Choices::Scissors, Game::Lose) => Choices::Paper,
+
+            (Choices::Paper, Game::Win)
+            | (Choices::Rock, Game::Lose)
+            | (Choices::Scissors, Game::Draw) => Choices::Scissors,
+
+            (Choices::Scissors, Game::Win)
+            | (Choices::Paper, Game::Lose)
+            | (Choices::Rock, Game::Draw) => Choices::Rock,
+        }
+    }
 }
 
 impl TryFrom<&str> for Choices {
@@ -47,16 +76,6 @@ impl TryFrom<&str> for Choices {
             "C" | "Z" => Choices::Scissors,
             _ => anyhow::bail!("Invalid character: \"{}\"", value),
         })
-    }
-}
-
-impl From<Choices> for usize {
-    fn from(src: Choices) -> Self {
-        match src {
-            Choices::Rock => 1,
-            Choices::Paper => 2,
-            Choices::Scissors => 3,
-        }
     }
 }
 
@@ -86,10 +105,6 @@ impl Ord for Choices {
     }
 }
 
-const WIN: usize = 6;
-const DRAW: usize = 3;
-const LOSE: usize = 0;
-
 impl Add for Choices {
     type Output = usize;
 
@@ -97,14 +112,44 @@ impl Add for Choices {
         // convention LHS == elf, RHS == me
         (match self.cmp(&rhs) {
             // wins
-            std::cmp::Ordering::Greater => WIN,
+            std::cmp::Ordering::Greater => Game::Win,
 
             // Loses
-            std::cmp::Ordering::Less => LOSE,
+            std::cmp::Ordering::Less => Game::Lose,
 
             // draws
-            std::cmp::Ordering::Equal => DRAW,
-        }) + usize::from(rhs)
+            std::cmp::Ordering::Equal => Game::Draw,
+        } as usize)
+            + (rhs as usize)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+#[repr(usize)]
+enum Game {
+    Win = 6,
+    Draw = 3,
+    Lose = 0,
+}
+
+impl TryFrom<&str> for Game {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value {
+            "X" => Game::Lose,
+            "Y" => Game::Draw,
+            "Z" => Game::Win,
+            _ => anyhow::bail!("Unsupported character: \"{}\"", value),
+        })
+    }
+}
+
+impl Add<Game> for Choices {
+    type Output = usize;
+
+    fn add(self, rhs: Game) -> Self::Output {
+        self + self.rigged(rhs)
     }
 }
 
