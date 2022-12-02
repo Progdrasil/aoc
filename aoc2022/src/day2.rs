@@ -40,7 +40,7 @@ impl Day for Day2 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 #[repr(usize)]
 enum Choices {
     Rock = 1,
@@ -50,18 +50,12 @@ enum Choices {
 
 impl Choices {
     fn rigged(self, result: Game) -> Self {
-        match (self, result) {
-            (Choices::Rock, Game::Win)
-            | (Choices::Paper, Game::Draw)
-            | (Choices::Scissors, Game::Lose) => Choices::Paper,
-
-            (Choices::Paper, Game::Win)
-            | (Choices::Rock, Game::Lose)
-            | (Choices::Scissors, Game::Draw) => Choices::Scissors,
-
-            (Choices::Scissors, Game::Win)
-            | (Choices::Paper, Game::Lose)
-            | (Choices::Rock, Game::Draw) => Choices::Rock,
+        let u = (2 + (result as usize)) % 3;
+        let calc = ((self as usize) + u) % 3;
+        match calc {
+            0 => Choices::Scissors,
+            1 => Choices::Rock,
+            _ => Choices::Paper,
         }
     }
 }
@@ -79,46 +73,16 @@ impl TryFrom<&str> for Choices {
     }
 }
 
-impl PartialOrd for Choices {
-    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(rhs))
-    }
-}
-impl Ord for Choices {
-    fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
-        match (self, rhs) {
-            // wins
-            (Choices::Rock, Choices::Paper)
-            | (Choices::Paper, Choices::Scissors)
-            | (Choices::Scissors, Choices::Rock) => std::cmp::Ordering::Greater,
-
-            // Loses
-            (Choices::Rock, Choices::Scissors)
-            | (Choices::Paper, Choices::Rock)
-            | (Choices::Scissors, Choices::Paper) => std::cmp::Ordering::Less,
-
-            // draws
-            (Choices::Rock, Choices::Rock)
-            | (Choices::Paper, Choices::Paper)
-            | (Choices::Scissors, Choices::Scissors) => std::cmp::Ordering::Equal,
-        }
-    }
-}
-
 impl Add for Choices {
     type Output = usize;
 
     fn add(self, rhs: Self) -> Self::Output {
         // convention LHS == elf, RHS == me
-        (match self.cmp(&rhs) {
-            // wins
-            std::cmp::Ordering::Greater => Game::Win,
-
-            // Loses
-            std::cmp::Ordering::Less => Game::Lose,
-
-            // draws
-            std::cmp::Ordering::Equal => Game::Draw,
+        let result = (3 + (rhs as usize) - (self as usize)) % 3;
+        3 * (match result {
+            0 => Game::Draw,
+            1 => Game::Win,
+            _ => Game::Lose,
         } as usize)
             + (rhs as usize)
     }
@@ -127,8 +91,8 @@ impl Add for Choices {
 #[derive(Debug, Clone, Copy)]
 #[repr(usize)]
 enum Game {
-    Win = 6,
-    Draw = 3,
+    Win = 2,
+    Draw = 1,
     Lose = 0,
 }
 
@@ -168,6 +132,13 @@ mod tests {
         let response = Day2.part1(INPUT)?;
 
         assert_eq!(response, "15");
+        Ok(())
+    }
+    #[test]
+    fn part2() -> anyhow::Result<()> {
+        let response = Day2.part2(INPUT)?;
+
+        assert_eq!(response, "12");
         Ok(())
     }
 }
