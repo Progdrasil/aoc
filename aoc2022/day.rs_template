@@ -1,0 +1,39 @@
+use runner::Day;
+
+pub struct Day6;
+
+impl Day for Day6 {
+    fn part1(&self, input: &str) -> anyhow::Result<String> {
+        todo!()
+    }
+
+    fn part2(&self, input: &str) -> anyhow::Result<String> {
+        todo!()
+    }
+
+    fn day(&self) -> usize {
+        6
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    const INPUT: &str = r"";
+
+    #[test]
+    fn part1() -> anyhow::Result<()> {
+        let res = Day6.part1(INPUT)?;
+        assert_eq!(res, "");
+        Ok(())
+    }
+
+    #[test]
+    fn part2() -> anyhow::Result<()> {
+        let res = Day6.part2(INPUT)?;
+        assert_eq!(res, "");
+        Ok(())
+    }
+}

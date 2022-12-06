@@ -14,3 +14,6 @@ anyhow = {workspace = true}
 itertools = "0.10"
 nom = "7"
 nom-supreme = "0.8"
+
+[dev-dependencies]
+pretty_assertions = "1"
