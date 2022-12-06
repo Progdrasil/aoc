@@ -1,45 +1,21 @@
-use std::collections::VecDeque;
-use std::fmt::Display;
+use std::{collections::VecDeque, fmt::Display};
 
 use itertools::Itertools;
-use nom::bytes::streaming::tag;
-use nom::character::complete::{anychar, char};
-use nom::multi::{count, many1};
-use nom::sequence::{delimited, preceded, tuple};
-use nom::{IResult, Parser};
-use nom_supreme::error::ErrorTree;
-use nom_supreme::final_parser::{final_parser, Location};
-use nom_supreme::ParserExt;
+use nom::{
+    bytes::complete::tag,
+    character::complete::{anychar, char},
+    multi::{count, many1},
+    sequence::{delimited, preceded, tuple},
+    IResult, Parser,
+};
+use nom_supreme::{final_parser::final_parser, ParserExt};
 use runner::Day;
 
 pub struct Day5;
 
 impl Day for Day5 {
     fn part1(&self, input: &str) -> anyhow::Result<String> {
-        let mut stacks: Vec<Stack> = Vec::new();
-        let mut lines = input.lines();
-
-        loop {
-            let next = lines.next().unwrap();
-            let row = match crates(next) {
-                Ok(r) => r.into_iter().enumerate(),
-                Err(_) => break, // must be line of column numbers
-            };
-
-            if stacks.is_empty() {
-                for (i, crt) in row {
-                    stacks.push(Stack::new(i, crt))
-                }
-            } else {
-                for (i, crt) in row {
-                    stacks[i].append(crt)
-                }
-            }
-        }
-        assert!(lines.next().unwrap().is_empty());
-
-        //moves
-        let moves = lines.map(|line| moves(line).unwrap()).collect_vec();
+        let (mut stacks, moves) = parse(input);
 
         for mv in moves {
             for _i in 0..mv.num {
@@ -55,12 +31,49 @@ impl Day for Day5 {
     }
 
     fn part2(&self, input: &str) -> anyhow::Result<String> {
-        todo!()
+        let (mut stacks, moves) = parse(input);
+
+        for mv in moves {
+            let crts = stacks[mv.from()].take_n(mv.num as usize);
+            stacks[mv.to()].place_n(crts);
+        }
+        Ok(stacks
+            .into_iter()
+            .filter_map(|mut s| s.contents.pop_front())
+            .join(""))
     }
 
     fn day(&self) -> usize {
         5
     }
+}
+
+fn parse(input: &str) -> (Vec<Stack>, Vec<Move>) {
+    let mut stacks: Vec<Stack> = Vec::new();
+    let mut lines = input.lines();
+
+    loop {
+        let next = lines.next().unwrap();
+        let row = match crates(next) {
+            Ok(r) => r.into_iter().enumerate(),
+            Err(_) => break, // must be line of column numbers
+        };
+
+        if stacks.is_empty() {
+            for (i, crt) in row {
+                stacks.push(Stack::new(i, crt))
+            }
+        } else {
+            for (i, crt) in row {
+                stacks[i].append(crt)
+            }
+        }
+    }
+    assert!(lines.next().unwrap().is_empty());
+
+    //moves
+    let moves = lines.map(|line| moves(line).unwrap()).collect_vec();
+    (stacks, moves)
 }
 
 fn crates(input: &str) -> Result<Vec<Option<char>>, nom::error::Error<&str>> {
@@ -141,8 +154,18 @@ impl Stack {
     fn take(&mut self) -> char {
         self.contents.pop_front().unwrap()
     }
+
+    fn take_n(&mut self, num: usize) -> Vec<char> {
+        self.contents.drain(0..num).collect_vec()
+    }
     fn place(&mut self, new: char) {
         self.contents.push_front(new)
+    }
+    fn place_n(&mut self, mut new: Vec<char>) {
+        new.reverse();
+        for c in new {
+            self.contents.push_front(c)
+        }
     }
 }
 
@@ -171,7 +194,7 @@ move 1 from 1 to 2";
     #[test]
     fn part2() -> anyhow::Result<()> {
         let res = Day5.part2(INPUT)?;
-        assert_eq!(res, "");
+        assert_eq!(res, "MCD");
         Ok(())
     }
 }
