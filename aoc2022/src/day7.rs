@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::anyhow;
 use either::Either::{self, Left, Right};
 use itertools::Itertools;
 use nom::{
@@ -17,6 +18,58 @@ pub struct Day7;
 
 impl Day for Day7 {
     fn part1(&self, input: &str) -> anyhow::Result<String> {
+        let root = Node::from_input(input);
+
+        let mut dirs = Vec::new();
+
+        root.find_dirs("/".into(), &mut dirs);
+
+        Ok(dirs
+            .into_iter()
+            .filter(|(_, sz)| *sz <= 100000)
+            .map(|(_, sz)| sz)
+            .sum::<u64>()
+            .to_string())
+    }
+
+    fn part2(&self, input: &str) -> anyhow::Result<String> {
+        let root = Node::from_input(input);
+        let max_disk = 70_000_000;
+        let needed_free_space = 30_000_000;
+
+        let current_free_space = max_disk - root.size;
+        let space_to_free = needed_free_space - current_free_space;
+        let mut dirs = Vec::new();
+        root.find_dirs("/".to_owned(), &mut dirs);
+        let (dir, sz) = dirs
+            .into_iter()
+            .filter(|(_, sz)| *sz > space_to_free)
+            .min_by(|(_, sz1), (_, sz2)| sz1.cmp(sz2))
+            .ok_or_else(|| anyhow!("thing is empty"))?;
+        println!("{} is smallest dir to free at least {}", dir, space_to_free);
+        Ok(sz.to_string())
+    }
+
+    fn day(&self) -> usize {
+        7
+    }
+}
+
+#[derive(Debug)]
+struct Node {
+    size: u64,
+    children: HashMap<String, Node>,
+}
+
+impl Node {
+    fn new() -> Self {
+        Self {
+            size: 0,
+            children: HashMap::new(),
+        }
+    }
+
+    fn from_input(input: &str) -> Self {
         let cli = input.lines().map(|l| line(l).unwrap()).collect_vec();
         let mut root = Node::new();
         let mut bread_crumbs = Vec::<String>::new();
@@ -33,8 +86,6 @@ impl Day for Day7 {
                     Command::Cd(Directory::Out) => {
                         // not efficient but I don't care
                         bread_crumbs.pop();
-                        println!("bread crumbs: {:?}", bread_crumbs);
-                        println!("nodes: {:#?}", root.children);
                         let mut iter = bread_crumbs.iter();
                         current = if let Some(name) = iter.next() {
                             root.children.get_mut(name).unwrap()
@@ -63,40 +114,7 @@ impl Day for Day7 {
         }
 
         root.calc_sizes();
-
-        let mut dirs = Vec::new();
-
-        root.find_dirs("/".into(), &mut dirs);
-
-        Ok(dirs
-            .into_iter()
-            .filter(|(_, sz)| *sz <= 100000)
-            .map(|(_, sz)| sz)
-            .sum::<u64>()
-            .to_string())
-    }
-
-    fn part2(&self, input: &str) -> anyhow::Result<String> {
-        todo!()
-    }
-
-    fn day(&self) -> usize {
-        7
-    }
-}
-
-#[derive(Debug)]
-struct Node {
-    size: u64,
-    children: HashMap<String, Node>,
-}
-
-impl Node {
-    fn new() -> Self {
-        Self {
-            size: 0,
-            children: HashMap::new(),
-        }
+        root
     }
 
     fn calc_sizes(&mut self) {
@@ -204,7 +222,7 @@ mod tests {
     #[test]
     fn part2() -> anyhow::Result<()> {
         let res = Day7.part2(INPUT)?;
-        assert_eq!(res, "");
+        assert_eq!(res, "24933642");
         Ok(())
     }
 }
