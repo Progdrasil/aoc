@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "runner",
-    "aoc2022",
+    "aoc22",
 ]
 
 [workspace.dependencies]
